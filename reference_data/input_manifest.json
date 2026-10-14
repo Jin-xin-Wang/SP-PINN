@@ -1,0 +1,481 @@
+{
+  "project": "SP-PINN_2D",
+  "domain": {
+    "dimension": 2,
+    "x_min": 0,
+    "x_max": 100,
+    "z_min": -0.6,
+    "z_max": 0,
+    "t_end_day": 65
+  },
+  "inverse_roi_domain": {
+    "dimension": 2,
+    "x_min": 0,
+    "x_max": 100,
+    "z_min": -0.6,
+    "z_max": 0,
+    "t_end_day": 65
+  },
+  "comsol_physical_domain": {
+    "x_min": -5,
+    "x_max": 105,
+    "z_min": -1.2,
+    "z_max": 0,
+    "t_end_day": 65
+  },
+  "local_domain": {
+    "t_end_day": 20
+  },
+  "available_data_windows": [
+    "rain1_0_20d"
+  ],
+  "segments": [
+    {
+      "label": "rain1_0_20d",
+      "group": "rain_event",
+      "event_index": 1,
+      "physical_start_day": 0,
+      "physical_end_day": 20,
+      "window_kind": "first_20d_including_rainfall",
+      "local_t_end_day": 20,
+      "snapshot_times_physical_d": [
+        0,
+        1,
+        2,
+        3,
+        5,
+        7,
+        10,
+        12,
+        20
+      ],
+      "snapshot_times_local_d": [
+        0,
+        1,
+        2,
+        3,
+        5,
+        7,
+        10,
+        12,
+        20
+      ],
+      "snapshot_rows": [
+        {
+          "event": "event1",
+          "snapshot_type": "start",
+          "time_day": 0,
+          "time_min": 0,
+          "file_tag": "t000000min"
+        },
+        {
+          "event": "event1",
+          "snapshot_type": "center+start_plus_1d",
+          "time_day": 1,
+          "time_min": 1440,
+          "file_tag": "t001440min"
+        },
+        {
+          "event": "event1",
+          "snapshot_type": "end",
+          "time_day": 2,
+          "time_min": 2880,
+          "file_tag": "t002880min"
+        },
+        {
+          "event": "event1",
+          "snapshot_type": "end_plus_1d+start_plus_3d",
+          "time_day": 3,
+          "time_min": 4320,
+          "file_tag": "t004320min"
+        },
+        {
+          "event": "event1",
+          "snapshot_type": "end_plus_3d+start_plus_5d",
+          "time_day": 5,
+          "time_min": 7200,
+          "file_tag": "t007200min"
+        },
+        {
+          "event": "event1",
+          "snapshot_type": "end_plus_5d",
+          "time_day": 7,
+          "time_min": 10080,
+          "file_tag": "t010080min"
+        },
+        {
+          "event": "event1",
+          "snapshot_type": "start_plus_10d",
+          "time_day": 10,
+          "time_min": 14400,
+          "file_tag": "t014400min"
+        },
+        {
+          "event": "event1",
+          "snapshot_type": "end_plus_10d",
+          "time_day": 12,
+          "time_min": 17280,
+          "file_tag": "t017280min"
+        },
+        {
+          "event": "event1",
+          "snapshot_type": "start_plus_20d",
+          "time_day": 20,
+          "time_min": 28800,
+          "file_tag": "t028800min"
+        }
+      ],
+      "reference_paths": {
+        "planes": "reference_data/segments/rain1_0_20d/planes",
+        "probes_regular_5x3": "reference_data/segments/rain1_0_20d/probes_regular_5x3"
+      }
+    }
+  ],
+  "data_window": "rain1_0_20d",
+  "probe_groups": {
+    "probes_regular_5x3": {
+      "probe_count": 15,
+      "available_variables": [
+        "h",
+        "se",
+        "theta_h"
+      ],
+      "segment_count": 1
+    }
+  },
+  "theta_probe_group_dir_name": "probes_regular_5x3",
+  "h_probe_group_dir_name": "probes_regular_5x3",
+  "boundary": {
+    "q_in": 0,
+    "top_flux_shape": "half sine pulse",
+    "rainfall_events": [
+      {
+        "start_day": 0,
+        "duration_day": 2,
+        "qmax_m_per_day": 0.05,
+        "event_index": 1,
+        "end_day": 2,
+        "shape": "half sine pulse"
+      },
+      {
+        "start_day": 22,
+        "duration_day": 1,
+        "qmax_m_per_day": 0.08,
+        "event_index": 2,
+        "end_day": 23,
+        "shape": "half sine pulse"
+      },
+      {
+        "start_day": 43,
+        "duration_day": 0.25,
+        "qmax_m_per_day": 0.15,
+        "event_index": 3,
+        "end_day": 43.25,
+        "shape": "half sine pulse"
+      }
+    ],
+    "top_flux_schedule": [
+      {
+        "start_day": 0,
+        "duration_day": 2,
+        "qmax_m_per_day": 0.05,
+        "event_index": 1,
+        "end_day": 2,
+        "shape": "half sine pulse"
+      },
+      {
+        "start_day": 22,
+        "duration_day": 1,
+        "qmax_m_per_day": 0.08,
+        "event_index": 2,
+        "end_day": 23,
+        "shape": "half sine pulse"
+      },
+      {
+        "start_day": 43,
+        "duration_day": 0.25,
+        "qmax_m_per_day": 0.15,
+        "event_index": 3,
+        "end_day": 43.25,
+        "shape": "half sine pulse"
+      }
+    ],
+    "physical_boundary_frame": "comsol",
+    "dimless_scaling_frame": "inverse_roi",
+    "boundaries": {
+      "top": {
+        "x_m": [
+          0,
+          100
+        ],
+        "z_m": [
+          0,
+          0
+        ],
+        "condition": "rainfall_flux",
+        "dimless_range_from_roi_scaling": {
+          "x_dim_min": -1,
+          "x_dim_max": 1,
+          "z_dim_min": 1,
+          "z_dim_max": 1
+        }
+      },
+      "bottom": {
+        "x_m": [
+          0,
+          100
+        ],
+        "z_m": [
+          -1.2,
+          -1.2
+        ],
+        "condition": "free_drainage",
+        "dimless_range_from_roi_scaling": {
+          "x_dim_min": -1,
+          "x_dim_max": 1,
+          "z_dim_min": -1,
+          "z_dim_max": -1
+        }
+      },
+      "left": {
+        "x_m": [
+          -5,
+          -5
+        ],
+        "z_m": [
+          -1.2,
+          0
+        ],
+        "condition": "no_flow_qx_zero",
+        "dimless_range_from_roi_scaling": {
+          "x_dim_min": -1.100000023841858,
+          "x_dim_max": -1.100000023841858,
+          "z_dim_min": -1,
+          "z_dim_max": 1
+        }
+      },
+      "right": {
+        "x_m": [
+          105,
+          105
+        ],
+        "z_m": [
+          -1.2,
+          0
+        ],
+        "condition": "no_flow_qx_zero",
+        "dimless_range_from_roi_scaling": {
+          "x_dim_min": 1.100000023841858,
+          "x_dim_max": 1.100000023841858,
+          "z_dim_min": -1,
+          "z_dim_max": 1
+        }
+      }
+    }
+  },
+  "parameter_fields_roi_dir": "reference_data/parameter_fields_roi",
+  "parameter_point_sets": {
+    "regular_5x3": {
+      "parameter_point_set": "regular_5x3",
+      "observation_mode": "regular_5x3_exact_ordinary_kriging_known_points",
+      "parameter_point_count": 15,
+      "x_count": 5,
+      "z_count": 3,
+      "x_known_m": [
+        5,
+        27.5,
+        50,
+        72.5,
+        95
+      ],
+      "z_known_m": [
+        -0.05000000074505806,
+        -0.20000000298023224,
+        -0.5
+      ],
+      "x_margin_m": 5,
+      "parameter_output_stats": {
+        "lnalpha": {
+          "min": 0.422759547829628,
+          "max": 2.311125800013542,
+          "range": 1.8883662521839142,
+          "observed_min": 0.737487256526947,
+          "observed_max": 1.9963980913162231,
+          "observed_range": 1.2589108347892761,
+          "median": 1.3891990184783936,
+          "source": "selected_parameter_points_expanded_25pct",
+          "expansion_fraction": 0.25,
+          "normalization_formula": "norm = 2 * (value - min) / (max - min) - 1",
+          "inverse_formula": "value = (norm + 1) * (max - min) / 2 + min",
+          "output_mode": "normalized_minus1_to_1",
+          "loss_mode": "normalized_mse_direct"
+        },
+        "theta_s": {
+          "min": 0.34476616978645325,
+          "max": 0.5978635251522064,
+          "range": 0.2530973553657532,
+          "observed_min": 0.3869490623474121,
+          "observed_max": 0.5556806325912476,
+          "observed_range": 0.16873157024383545,
+          "median": 0.4805588126182556,
+          "source": "selected_parameter_points_expanded_25pct",
+          "expansion_fraction": 0.25,
+          "normalization_formula": "norm = 2 * (value - min) / (max - min) - 1",
+          "inverse_formula": "value = (norm + 1) * (max - min) / 2 + min",
+          "output_mode": "normalized_minus1_to_1",
+          "loss_mode": "normalized_mse_direct"
+        },
+        "theta_r": {
+          "min": 0.01858431287109852,
+          "max": 0.07587463222444057,
+          "range": 0.057290319353342056,
+          "observed_min": 0.02813269942998886,
+          "observed_max": 0.06632624566555023,
+          "observed_range": 0.03819354623556137,
+          "median": 0.039428528398275375,
+          "source": "selected_parameter_points_expanded_25pct",
+          "expansion_fraction": 0.25,
+          "normalization_formula": "norm = 2 * (value - min) / (max - min) - 1",
+          "inverse_formula": "value = (norm + 1) * (max - min) / 2 + min",
+          "output_mode": "normalized_minus1_to_1",
+          "loss_mode": "normalized_mse_direct"
+        },
+        "lnks": {
+          "min": -2.2355402391403913,
+          "max": 0.3588480558246374,
+          "range": 2.5943882949650288,
+          "observed_min": -1.8031421899795532,
+          "observed_max": -0.07354999333620071,
+          "observed_range": 1.7295921966433525,
+          "median": -0.9761823415756226,
+          "source": "selected_parameter_points_expanded_25pct",
+          "expansion_fraction": 0.25,
+          "normalization_formula": "norm = 2 * (value - min) / (max - min) - 1",
+          "inverse_formula": "value = (norm + 1) * (max - min) / 2 + min",
+          "output_mode": "normalized_minus1_to_1",
+          "loss_mode": "normalized_mse_direct"
+        }
+      },
+      "n_output_mode": "raw_n supervised directly; physics uses n = 1 + softplus(raw_n)",
+      "n_supervision_target": "raw_n",
+      "parameter_supervision_truth": "exact_values_from_matching_ordinary_kriging_known_points",
+      "path": "reference_data/parameter_points_regular_5x3",
+      "npz": "reference_data/parameter_points_regular_5x3/parameter_point_targets.npz"
+    }
+  },
+  "default_parameter_point_set": "regular_5x3",
+  "parameter_point_npz": "reference_data/parameter_points_regular_5x3/parameter_point_targets.npz",
+  "parameter_point_count": 15,
+  "field_global_stats": {
+    "alpha": {
+      "mean": 4.050942696521841,
+      "std": 1.605353512447489,
+      "median": 3.652552514085608,
+      "min": 2.015836772901952,
+      "max": 7.795656829400153
+    },
+    "n": {
+      "mean": 1.1847820098132258,
+      "std": 0.030458122982922033,
+      "median": 1.178847135340427,
+      "min": 1.13694069592779,
+      "max": 1.282604152666986
+    },
+    "theta_s": {
+      "mean": 0.47829671258429807,
+      "std": 0.03988896326371684,
+      "median": 0.484174998477234,
+      "min": 0.37579482570115,
+      "max": 0.5593020415711344
+    },
+    "theta_r": {
+      "mean": 0.037682987356410944,
+      "std": 0.010160844878606684,
+      "median": 0.03690873769681846,
+      "min": 0.0214512279205805,
+      "max": 0.06876103488736635
+    },
+    "ks": {
+      "mean": 0.4336901948680509,
+      "std": 0.22075848255203043,
+      "median": 0.37627020732530736,
+      "min": 0.1248878980576485,
+      "max": 1.071090469494173
+    },
+    "lnks": {
+      "mean": -0.9675900776563349,
+      "std": 0.5226561717957163,
+      "median": -0.9774477610586787,
+      "min": -2.0803387595982947,
+      "max": 0.06867725988140941
+    },
+    "lnalpha": {
+      "mean": 1.3228989567247413,
+      "std": 0.3882570290341501,
+      "median": 1.295426229549356,
+      "min": 0.7010343811087686,
+      "max": 2.053566761871963
+    },
+    "lnn1": {
+      "mean": -1.7014312369057385,
+      "std": 0.15842853715813,
+      "median": -1.7212238305494165,
+      "min": -1.9882073233115545,
+      "max": -1.2637081143351225
+    },
+    "theta0": {
+      "mean": 0.29629685631714625,
+      "std": 0.020090116981942237,
+      "median": 0.30273053485406987,
+      "min": 0.2364049244960557,
+      "max": 0.33040842819972827
+    }
+  },
+  "state_plane_variables": [
+    "se",
+    "h",
+    "theta_h",
+    "k_h",
+    "qz_h"
+  ],
+  "parameter_field_variables": [
+    "lnalpha",
+    "lnn1",
+    "theta_s",
+    "theta_r",
+    "lnks"
+  ],
+  "parameter_physical_variables": [
+    "alpha",
+    "n",
+    "theta_s",
+    "theta_r",
+    "ks"
+  ],
+  "parameter_supervision_variables": [
+    "lnalpha_norm",
+    "raw_n",
+    "theta_s_norm",
+    "theta_r_norm",
+    "lnks_norm"
+  ],
+  "input_dim": 3,
+  "parameter_field_input_dim": 2,
+  "directory_paths": {
+    "segments": "reference_data/segments",
+    "parameter_fields_roi": "reference_data/parameter_fields_roi",
+    "parameter_points_regular_5x3": "reference_data/parameter_points_regular_5x3"
+  },
+  "portable": true,
+  "portable_note": "Default shared64 5x3/5x3/noBCIC, rain1_0_20d only; all runtime data are bundled locally.",
+  "source_provenance_note": "Bundled reference arrays were originally prepared from COMSOL exports and exact known parameter samples. Original numerical data are unchanged. Historical Kriging baselines, other observation layouts, and post-rain windows are not packaged.",
+  "generated_at": "2026-08-02T10:48:36+08:00",
+  "generated_by": "build_inverse_inputs_AA.py",
+  "source_provenance": {
+    "runtime_dependency": "All training inputs are stored under this project's reference_data; no parent-project inputs are required.",
+    "kriging_method": "ordinary Kriging; theta_s/theta_r in physical space and lnalpha/ln(n-1)/lnKs in transformed space; selected by LOOCV RMSE from five variogram models.",
+    "active_layouts": [
+      "regular_5x3"
+    ]
+  }
+}

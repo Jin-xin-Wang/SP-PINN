@@ -1,0 +1,8 @@
+{
+  "model_file": "MVG_PTF01.rdata",
+  "source_package": "tkdweber/euptf2",
+  "source_release": "1.0.0",
+  "source_url": "https://github.com/tkdweber/euptf2/raw/1.0.0/data/MVG_PTF01.rdata",
+  "sha256": "22EC0552568B710C26DEC024E8C34935F9E47E7357F0221BF872595E20A6F93F",
+  "runtime_policy": "The parameter-field generator reads this bundled file locally and never downloads models."
+}

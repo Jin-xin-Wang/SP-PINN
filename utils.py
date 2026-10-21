@@ -4,12 +4,8 @@ import os
 import random
 import time
 from pathlib import Path
-
 import numpy as np
 import torch
-
-
-SECONDS_PER_DAY = 86400.0
 
 
 def choose_device(requested):
@@ -25,7 +21,6 @@ def choose_device(requested):
 def set_seed(seed, deterministic=False):
     """Seed all runtime RNGs and optionally request deterministic torch kernels."""
     if deterministic:
-        # Set this before torch.manual_seed can initialize a CUDA context.
         os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
     random.seed(seed)
     np.random.seed(seed)
@@ -62,7 +57,7 @@ def scientific(value):
 
 
 def count_parameters(model):
-    return sum(param.numel() for param in model.parameters() if param.requires_grad)
+    return sum((param.numel() for param in model.parameters() if param.requires_grad))
 
 
 def format_log_row(row):
@@ -73,29 +68,17 @@ def format_log_row(row):
         f"total={scientific(row['total'])}",
         f"pde={scientific(row['pde'])}",
     ]
-    if "top" in row:
-        pieces.append(f"top={scientific(row['top'])}")
-    if "bottom" in row:
-        pieces.append(f"bottom={scientific(row['bottom'])}")
-    if "initial_theta" in row:
-        pieces.append(f"initial_theta={scientific(row['initial_theta'])}")
-    if "initial_head" in row:
-        pieces.append(f"initial_head={scientific(row['initial_head'])}")
-    if "initial_theta_state" in row:
-        pieces.append(f"initial_theta_state={scientific(row['initial_theta_state'])}")
     pieces.extend(
         [
             f"probe_theta={scientific(row['probe_theta'])}",
-            f"probe_h={scientific(row['probe_h'])}" if "probe_h" in row else None,
             f"param={scientific(row['param'])}",
         ]
     )
-    pieces = [piece for piece in pieces if piece is not None]
     for key in ("param_alpha", "param_n", "param_theta_s", "param_theta_r", "param_lnks"):
         if key in row:
             pieces.append(f"{key}={scientific(row[key])}")
-    for prefix in ("pde_", "top_", "bottom_", "probe_theta_", "probe_h_"):
-        for key in sorted(k for k in row if k.startswith(prefix)):
+    for prefix in ("pde_", "probe_theta_"):
+        for key in sorted((k for k in row if k.startswith(prefix))):
             pieces.append(f"{key}={scientific(row[key])}")
     return " ".join(pieces)
 
@@ -111,12 +94,4 @@ def write_dict_csv(path, fieldnames, rows):
     with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
-        writer.writerows(rows)
-
-
-def write_matrix_csv(path, header, rows):
-    path = Path(path)
-    with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(header)
         writer.writerows(rows)

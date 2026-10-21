@@ -2,37 +2,15 @@ import csv
 import json
 import shutil
 from pathlib import Path
-
-import matplotlib
-
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
-
 from utils import ensure_dir, write_dict_csv, write_json
 
-
 STATE_PLANE_VARIABLES = ("se", "h", "theta_h", "k_h", "qz_h")
-STATE_VARIABLE_LABELS = {
-    "se": "Se",
-    "h": "h",
-    "theta_h": "theta_h",
-    "k_h": "K(h)",
-    "qz_h": "q_z",
-}
-STATE_VARIABLE_UNITS = {
-    "h": "m",
-    "k_h": "m/day",
-    "qz_h": "m/day",
-}
-PROBE_VARIABLE_LABELS = {
-    "theta_h": "theta_h",
-    "h": "h",
-}
-PROBE_VARIABLE_UNITS = {
-    "theta_h": None,
-    "h": "m",
-}
+STATE_VARIABLE_LABELS = {"se": "Se", "h": "h", "theta_h": "theta_h", "k_h": "K(h)", "qz_h": "q_z"}
+STATE_VARIABLE_UNITS = {"h": "m", "k_h": "m/day", "qz_h": "m/day"}
+PROBE_VARIABLE_LABELS = {"theta_h": "theta_h", "h": "h"}
+PROBE_VARIABLE_UNITS = {"theta_h": None, "h": "m"}
 PARAMETER_POINT_VARIABLES = ("lnalpha", "lnn1", "theta_s", "theta_r", "lnks")
 PARAMETER_FIELD_VARIABLES = ("lnalpha", "lnn1", "theta_s", "theta_r", "lnks")
 PARAMETER_VARIABLE_LABELS = {
@@ -48,13 +26,6 @@ PARAMETER_VARIABLE_UNITS = {
     "theta_s": "-",
     "theta_r": "-",
     "lnks": "ln(m/day)",
-}
-KRIGING_FIELD_ALIASES = {
-    "lnalpha": ("lnalpha",),
-    "lnn1": ("lnn1", "ln_n_minus_1"),
-    "theta_s": ("theta_s",),
-    "theta_r": ("theta_r",),
-    "lnks": ("lnks",),
 }
 FIELD_FILES = {
     "alpha": "alpha_field_roi.txt",
@@ -119,19 +90,25 @@ def _build_probe_coords(metadata, times_d, theta_h):
             coords[row] = np.array([meta["x_m"], meta["z_m"], time_d], dtype=np.float32)
             theta_values[row, 0] = theta_h[probe_index, time_index]
             row += 1
-    return coords, theta_values
+    return (coords, theta_values)
 
 
 def load_probe_dataset(path):
     path = Path(path)
     probe_npz = path / "probe_reference.npz" if path.is_dir() else path
-    metadata_path = path / "probe_metadata.csv" if path.is_dir() else path.with_name("probe_metadata.csv")
+    metadata_path = (
+        path / "probe_metadata.csv" if path.is_dir() else path.with_name("probe_metadata.csv")
+    )
     if not probe_npz.exists():
         raise FileNotFoundError(f"Probe reference dataset not found: {probe_npz}")
     metadata = load_probe_metadata(metadata_path)
     with np.load(probe_npz, allow_pickle=False) as data:
         times_d = data["times_day"].astype(np.float32)
-        physical_times_d = data["physical_times_day"].astype(np.float32) if "physical_times_day" in data else times_d
+        physical_times_d = (
+            data["physical_times_day"].astype(np.float32)
+            if "physical_times_day" in data
+            else times_d
+        )
         arrays = {
             name: data[name].astype(np.float32)
             for name in ("se", "h", "theta_h", "k_h", "qz_h")
@@ -166,12 +143,12 @@ def load_plane_csv(path):
     coord2_1d, i2 = np.unique(data[:, 1], return_inverse=True)
     grid = np.zeros((len(coord2_1d), len(coord1_1d)), dtype=np.float32)
     grid[i2, i1] = data[:, 2]
-    return coord1_1d, coord2_1d, grid
+    return (coord1_1d, coord2_1d, grid)
 
 
 def _z_mask(z_1d, z_filter):
     z_1d = np.asarray(z_1d, dtype=np.float32)
-    return (z_1d >= float(z_filter[0]) - 1.0e-7) & (z_1d <= float(z_filter[1]) + 1.0e-7)
+    return (z_1d >= float(z_filter[0]) - 1e-07) & (z_1d <= float(z_filter[1]) + 1e-07)
 
 
 def _depth_metadata(z_values, z_filter=PARAMETER_FIELD_PLOT_Z_FILTER_M):
@@ -230,7 +207,7 @@ def load_xzv_grid(path):
     field[iz, ix] = data[:, 2].astype(np.float32)
     x_1d = x_1d64.astype(np.float32)
     z_1d = z_1d64.astype(np.float32)
-    return x_1d, z_1d, field
+    return (x_1d, z_1d, field)
 
 
 def load_parameter_field_dataset(field_dir):
@@ -244,9 +221,15 @@ def load_parameter_field_dataset(field_dir):
         elif not (np.array_equal(dataset["x_1d"], x_1d) and np.array_equal(dataset["z_1d"], z_1d)):
             raise ValueError(f"Parameter field grid mismatch: {field_dir / filename}")
         dataset["fields"][field_name] = field
-    dataset["fields"]["lnalpha"] = np.log(np.clip(dataset["fields"]["alpha"], 1.0e-12, None)).astype(np.float32)
-    dataset["fields"]["lnn1"] = np.log(np.clip(dataset["fields"]["n"] - 1.0, 1.0e-12, None)).astype(np.float32)
-    dataset["fields"]["lnks"] = np.log(np.clip(dataset["fields"]["ks"], 1.0e-12, None)).astype(np.float32)
+    dataset["fields"]["lnalpha"] = np.log(np.clip(dataset["fields"]["alpha"], 1e-12, None)).astype(
+        np.float32
+    )
+    dataset["fields"]["lnn1"] = np.log(np.clip(dataset["fields"]["n"] - 1.0, 1e-12, None)).astype(
+        np.float32
+    )
+    dataset["fields"]["lnks"] = np.log(np.clip(dataset["fields"]["ks"], 1e-12, None)).astype(
+        np.float32
+    )
     return dataset
 
 
@@ -277,7 +260,9 @@ def load_parameter_point_targets(path):
 def _uniform_cell_centers(source_1d, count):
     source_1d = np.sort(np.asarray(source_1d, dtype=np.float64).reshape(-1))
     if source_1d.size < 2:
-        raise ValueError("At least two source coordinates are required for uniform center resampling.")
+        raise ValueError(
+            "At least two source coordinates are required for uniform center resampling."
+        )
     if int(count) <= 0:
         raise ValueError(f"Grid count must be positive, got {count}.")
     spacing = float(np.median(np.diff(source_1d)))
@@ -298,13 +283,13 @@ def _bilinear_resample_parameter_field(x_source, z_source, values, x_target, z_t
     z_source = np.asarray(z_source, dtype=np.float64)[z_order]
     values = np.asarray(values, dtype=np.float64)[np.ix_(z_order, x_order)]
     along_x = np.vstack([np.interp(x_target, x_source, row) for row in values])
-    return np.column_stack([np.interp(z_target, z_source, along_x[:, index]) for index in range(len(x_target))])
+    return np.column_stack(
+        [np.interp(z_target, z_source, along_x[:, index]) for index in range(len(x_target))]
+    )
 
 
 def build_depth_filtered_parameter_grid_points(
-    field_dataset,
-    z_filter_m=PARAMETER_POINT_EVALUATION_Z_FILTER_M,
-    grid_shape=None,
+    field_dataset, z_filter_m=PARAMETER_POINT_EVALUATION_Z_FILTER_M, grid_shape=None
 ):
     x_1d = np.asarray(field_dataset["x_1d"], dtype=np.float64)
     z_1d = np.asarray(field_dataset["z_1d"], dtype=np.float64)
@@ -325,17 +310,12 @@ def build_depth_filtered_parameter_grid_points(
         z_plot = _uniform_cell_centers(z_source, n_z)
         fields = {
             field_name: _bilinear_resample_parameter_field(
-                x_1d,
-                z_source,
-                field_dataset["fields"][field_name][mask, :],
-                x_plot,
-                z_plot,
+                x_1d, z_source, field_dataset["fields"][field_name][mask, :], x_plot, z_plot
             ).astype(np.float32)
             for field_name in PARAMETER_FIELD_VARIABLES
         }
         source = "uniform_parameter_grid_center_resample"
         resampling = "bilinear_reference_resample_at_uniform_cell_centers"
-
     xx, zz = np.meshgrid(x_plot, z_plot, indexing="xy")
     coords_phys = np.column_stack([xx.reshape(-1), zz.reshape(-1)]).astype(np.float32)
     payload = {
@@ -373,8 +353,8 @@ def metrics_for_pair(reference, prediction):
         "mae": float(np.mean(np.abs(diff))),
         "rmse": float(np.sqrt(np.mean(diff**2))),
         "bias": float(np.mean(diff)),
-        "rel_l2": float(np.linalg.norm(diff.reshape(-1)) / max(denom, 1.0e-12)),
-        "r2": float(1.0 - ss_res / ss_tot) if ss_tot > 1.0e-30 else 0.0,
+        "rel_l2": float(np.linalg.norm(diff.reshape(-1)) / max(denom, 1e-12)),
+        "r2": float(1.0 - ss_res / ss_tot) if ss_tot > 1e-30 else 0.0,
         "reference_min": float(np.min(reference)),
         "reference_max": float(np.max(reference)),
         "prediction_min": float(np.min(prediction)),
@@ -392,202 +372,6 @@ def state_axis_label(var_name):
     label = STATE_VARIABLE_LABELS.get(var_name, var_name)
     unit = STATE_VARIABLE_UNITS.get(var_name, "")
     return f"{label} [{unit}]" if unit else label
-
-
-def _extract_kriging_metric(kriging_metrics, field_name, metric_name):
-    if not kriging_metrics:
-        return None
-    aliases = KRIGING_FIELD_ALIASES.get(field_name, (field_name,))
-    if isinstance(kriging_metrics, dict):
-        candidates = [kriging_metrics.get(alias) for alias in aliases]
-        metrics_payload = kriging_metrics.get("metrics")
-        if isinstance(metrics_payload, dict):
-            candidates.extend(metrics_payload.get(alias) for alias in aliases)
-        if metric_name == "rel_l2":
-            for payload_key in ("field_rel_l2", "point_rel_l2"):
-                field_payload = kriging_metrics.get(payload_key)
-                if isinstance(field_payload, dict):
-                    for alias in aliases:
-                        if alias in field_payload:
-                            return float(field_payload[alias])
-        if metric_name == "r2":
-            for payload_key in ("field_r2", "point_r2"):
-                field_payload = kriging_metrics.get(payload_key)
-                if isinstance(field_payload, dict):
-                    for alias in aliases:
-                        if alias in field_payload:
-                            return float(field_payload[alias])
-    else:
-        candidates = []
-    for candidate in candidates:
-        if isinstance(candidate, dict) and metric_name in candidate:
-            return float(candidate[metric_name])
-    return None
-
-
-def _extract_kriging_rel_l2(kriging_metrics, field_name):
-    return _extract_kriging_metric(kriging_metrics, field_name, "rel_l2")
-
-
-def _extract_kriging_r2(kriging_metrics, field_name):
-    return _extract_kriging_metric(kriging_metrics, field_name, "r2")
-
-
-def _baseline_label(kriging_metrics):
-    if not isinstance(kriging_metrics, dict):
-        return "OK"
-    label = kriging_metrics.get("baseline_label") or kriging_metrics.get("kriging_label")
-    if label:
-        return str(label)
-    method = str(kriging_metrics.get("interpolation_method") or kriging_metrics.get("source") or "")
-    if "rbf" in method.lower():
-        return "RBF"
-    return "OK"
-
-
-def _ok_label(kriging_metrics, field_name):
-    rel_l2 = _extract_kriging_rel_l2(kriging_metrics, field_name)
-    r2 = _extract_kriging_r2(kriging_metrics, field_name)
-    if rel_l2 is None and r2 is None:
-        return ""
-    label = _baseline_label(kriging_metrics)
-    parts = []
-    if rel_l2 is not None:
-        parts.append(f"{label} relL2={rel_l2:.3e}")
-    if r2 is not None:
-        parts.append(f"{label} R$^2$={r2:.3f}")
-    return "\n" + " ".join(parts)
-
-
-def _baseline_root(kriging_metrics=None, kriging_metrics_path=None):
-    candidates = []
-    if kriging_metrics_path:
-        candidates.append(Path(kriging_metrics_path).parent)
-    if isinstance(kriging_metrics, dict):
-        for key in (
-            "baseline_dir",
-            "output_dir",
-            "kriging_baseline_dir",
-            "ordinary_kriging_baseline_dir",
-            "rbf_baseline_dir",
-        ):
-            value = kriging_metrics.get(key)
-            if value:
-                candidates.append(Path(value))
-        for key in ("parameter_field_metrics", "parameter_point_metrics"):
-            value = kriging_metrics.get(key)
-            if value:
-                candidates.append(Path(value).parent)
-    for candidate in candidates:
-        try:
-            candidate = Path(candidate)
-        except TypeError:
-            continue
-        if candidate.exists() and candidate.is_dir():
-            return candidate
-    return None
-
-
-def _baseline_field_file_candidates(field_name, baseline_label):
-    aliases = {
-        "lnalpha": ("lnalpha",),
-        "lnn1": ("lnn1", "ln_n_minus_1"),
-        "theta_s": ("theta_s",),
-        "theta_r": ("theta_r",),
-        "lnks": ("lnks", "Ks"),
-    }.get(field_name, (field_name,))
-    label = str(baseline_label or "OK").lower()
-    if label == "rbf":
-        suffixes = ("rbf_interpolation_field", "rbf_field", "rbf_interp")
-    else:
-        suffixes = ("ordinary_kriging_field", "ok_field")
-    names = []
-    for alias in aliases:
-        for suffix in suffixes:
-            names.append(f"{alias}_{suffix}.txt")
-    return names
-
-
-def _load_xzv_field(path):
-    try:
-        data = np.loadtxt(path, dtype=np.float64)
-    except ValueError:
-        data = np.loadtxt(path, dtype=np.float64, skiprows=1)
-    if data.ndim != 2 or data.shape[1] < 3:
-        raise ValueError(f"Baseline field file must have at least x,z,value columns: {path}")
-    x_1d, ix = np.unique(data[:, 0], return_inverse=True)
-    z_1d, iz = np.unique(data[:, 1], return_inverse=True)
-    field = np.full((len(z_1d), len(x_1d)), np.nan, dtype=np.float32)
-    field[iz, ix] = data[:, 2].astype(np.float32)
-    return x_1d.astype(np.float32), z_1d.astype(np.float32), field
-
-
-def _align_grid_field(source_x, source_z, source_field, target_x, target_z, field_name):
-    source_x = np.asarray(source_x, dtype=np.float64)
-    source_z = np.asarray(source_z, dtype=np.float64)
-    target_x = np.asarray(target_x, dtype=np.float64)
-    target_z = np.asarray(target_z, dtype=np.float64)
-    source_field = np.asarray(source_field, dtype=np.float32)
-    if source_field.shape == (len(target_z), len(target_x)) and np.allclose(source_x, target_x) and np.allclose(source_z, target_z):
-        return source_field.astype(np.float32)
-    tolerance = 1.0e-6
-    if (
-        float(np.min(target_x)) < float(np.min(source_x)) - tolerance
-        or float(np.max(target_x)) > float(np.max(source_x)) + tolerance
-        or float(np.min(target_z)) < float(np.min(source_z)) - tolerance
-        or float(np.max(target_z)) > float(np.max(source_z)) + tolerance
-    ):
-        raise ValueError(f"Baseline field grid for {field_name} does not cover the target grid.")
-    return _bilinear_resample_parameter_field(source_x, source_z, source_field, target_x, target_z).astype(np.float32)
-
-
-def load_baseline_field_planes(kriging_metrics=None, kriging_metrics_path=None, target_x=None, target_z=None):
-    root = _baseline_root(kriging_metrics, kriging_metrics_path)
-    if root is None:
-        return None
-    label = _baseline_label(kriging_metrics)
-    fields = {}
-    paths = {}
-    for field_name in PARAMETER_FIELD_VARIABLES:
-        field_path = None
-        for filename in _baseline_field_file_candidates(field_name, label):
-            candidate = root / filename
-            if candidate.exists():
-                field_path = candidate
-                break
-        if field_path is None:
-            return None
-        x_1d, z_1d, field = _load_xzv_field(field_path)
-        if target_x is not None and target_z is not None:
-            field = _align_grid_field(x_1d, z_1d, field, target_x, target_z, field_name)
-        fields[field_name] = field
-        paths[field_name] = str(field_path)
-    return {
-        "baseline_label": label,
-        "root": str(root),
-        "field_paths": paths,
-        "fields": fields,
-    }
-
-
-def _baseline_values_at_points(baseline_fields, x_1d, z_1d, coords_phys):
-    if not baseline_fields:
-        return None
-    coords_phys = np.asarray(coords_phys, dtype=np.float64)
-    x_index = {round(float(value), 9): index for index, value in enumerate(np.asarray(x_1d, dtype=np.float64))}
-    z_index = {round(float(value), 9): index for index, value in enumerate(np.asarray(z_1d, dtype=np.float64))}
-    values = {}
-    for field_name, field in baseline_fields["fields"].items():
-        field = np.asarray(field, dtype=np.float32)
-        sampled = np.empty((coords_phys.shape[0],), dtype=np.float32)
-        for idx, (x_value, z_value) in enumerate(coords_phys[:, :2]):
-            ix = x_index.get(round(float(x_value), 9))
-            iz = z_index.get(round(float(z_value), 9))
-            if ix is None or iz is None:
-                return None
-            sampled[idx] = field[iz, ix]
-        values[field_name] = sampled
-    return values
 
 
 def save_loss_history(history, output_dir, plot_keys=None, dpi=180):
@@ -622,8 +406,8 @@ def save_loss_history(history, output_dir, plot_keys=None, dpi=180):
             if not np.isfinite(value):
                 continue
             xs.append(int(row["epoch"]))
-            ys.append(max(value, 1.0e-30))
-        return xs, ys
+            ys.append(max(value, 1e-30))
+        return (xs, ys)
 
     plotted_loss = False
     for key in keys:
@@ -632,10 +416,10 @@ def save_loss_history(history, output_dir, plot_keys=None, dpi=180):
         if plot_key_set is not None and key not in plot_key_set:
             continue
         raw_values = [float(row.get(key, 0.0)) for row in history]
-        if all(abs(value) <= 1.0e-30 for value in raw_values):
+        if all((abs(value) <= 1e-30 for value in raw_values)):
             continue
         epochs = [int(row["epoch"]) for row in history]
-        values = [max(value, 1.0e-30) for value in raw_values]
+        values = [max(value, 1e-30) for value in raw_values]
         ax_loss.semilogy(epochs, values, label=key)
         plotted_loss = True
     ax_loss.set_xlabel("epoch")
@@ -645,8 +429,14 @@ def save_loss_history(history, output_dir, plot_keys=None, dpi=180):
     if plotted_loss:
         ax_loss.legend(fontsize=7, ncol=2)
     else:
-        ax_loss.text(0.5, 0.5, "No active nonzero loss terms", ha="center", va="center", transform=ax_loss.transAxes)
-
+        ax_loss.text(
+            0.5,
+            0.5,
+            "No active nonzero loss terms",
+            ha="center",
+            va="center",
+            transform=ax_loss.transAxes,
+        )
     parameter_curve_keys = (
         ("lnalpha", "param_field_rel_l2_lnalpha"),
         ("ln(n-1)", "param_field_rel_l2_lnn1"),
@@ -668,8 +458,14 @@ def save_loss_history(history, output_dir, plot_keys=None, dpi=180):
     if plotted_param:
         ax_param.legend(fontsize=7, ncol=2)
     else:
-        ax_param.text(0.5, 0.5, "No parameter relL2 samples", ha="center", va="center", transform=ax_param.transAxes)
-
+        ax_param.text(
+            0.5,
+            0.5,
+            "No parameter relL2 samples",
+            ha="center",
+            va="center",
+            transform=ax_param.transAxes,
+        )
     state_curve_keys = (
         ("h", "state_rel_l2_h"),
         ("k_h", "state_rel_l2_k_h"),
@@ -690,8 +486,14 @@ def save_loss_history(history, output_dir, plot_keys=None, dpi=180):
     if plotted_state:
         ax_state.legend(fontsize=7, ncol=2)
     else:
-        ax_state.text(0.5, 0.5, "No state relL2 samples", ha="center", va="center", transform=ax_state.transAxes)
-
+        ax_state.text(
+            0.5,
+            0.5,
+            "No state relL2 samples",
+            ha="center",
+            va="center",
+            transform=ax_state.transAxes,
+        )
     fig.savefig(output_dir / "loss_history.png", dpi=int(dpi))
     plt.close(fig)
 
@@ -712,7 +514,9 @@ def _imshow_xz(ax, x_1d, z_1d, values, title, cmap="turbo", vmin=None, vmax=None
     return im
 
 
-def save_state_plane_comparison(plane_reference, plane_predictions, output_dir, dpi=180, plot_times_local_d=None):
+def save_state_plane_comparison(
+    plane_reference, plane_predictions, output_dir, dpi=180, plot_times_local_d=None
+):
     output_dir = ensure_dir(Path(output_dir))
     metrics_rows = []
     metrics_json = {}
@@ -727,7 +531,7 @@ def save_state_plane_comparison(plane_reference, plane_predictions, output_dir, 
     else:
         plot_indices = []
         for target_time_d in plot_times_local_d:
-            matches = np.where(np.isclose(times, float(target_time_d), atol=1.0e-6))[0]
+            matches = np.where(np.isclose(times, float(target_time_d), atol=1e-06))[0]
             if matches.size:
                 plot_indices.append(int(matches[0]))
         if not plot_indices:
@@ -757,10 +561,7 @@ def save_state_plane_comparison(plane_reference, plane_predictions, output_dir, 
                 }
             )
         fig, axes = plt.subplots(
-            len(plot_indices),
-            3,
-            figsize=(11.5, max(2.2 * len(plot_indices), 3.0)),
-            squeeze=False,
+            len(plot_indices), 3, figsize=(11.5, max(2.2 * len(plot_indices), 3.0)), squeeze=False
         )
         for row_index, i in enumerate(plot_indices):
             time_d = times[i]
@@ -769,7 +570,10 @@ def save_state_plane_comparison(plane_reference, plane_predictions, output_dir, 
             predicted = pred["fields"][var_name][i]
             err = predicted - truth
             metric = metrics_json[var_name][str(physical_time_d)]
-            clim = (float(min(np.min(truth), np.min(predicted))), float(max(np.max(truth), np.max(predicted))))
+            clim = (
+                float(min(np.min(truth), np.min(predicted))),
+                float(max(np.max(truth), np.max(predicted))),
+            )
             err_abs = float(np.max(np.abs(err)))
             panels = (
                 ("Reference", truth, "turbo", clim[0], clim[1]),
@@ -782,7 +586,16 @@ def save_state_plane_comparison(plane_reference, plane_predictions, output_dir, 
                     label += f" (local {float(time_d):g}d)"
                 if col == 2:
                     label += f"\nrelL2={metric['rel_l2']:.3g}"
-                im = _imshow_xz(ax=axes[row_index, col], x_1d=x_1d, z_1d=z_1d, values=values, title=label, cmap=cmap, vmin=vmin, vmax=vmax)
+                im = _imshow_xz(
+                    ax=axes[row_index, col],
+                    x_1d=x_1d,
+                    z_1d=z_1d,
+                    values=values,
+                    title=label,
+                    cmap=cmap,
+                    vmin=vmin,
+                    vmax=vmax,
+                )
                 cbar = fig.colorbar(im, ax=axes[row_index, col], shrink=0.78)
                 if var_name in STATE_VARIABLE_UNITS:
                     cbar.set_label(axis_label, fontsize=8)
@@ -801,7 +614,16 @@ def _probe_axis_label(variable_name):
     return label if not unit else f"{label} ({unit})"
 
 
-def save_probe_variable_comparison(reference_probe, prediction_values, output_dir, plot_seed, variable_name="theta_h", file_prefix=None, plot_prefix=None, dpi=180):
+def save_probe_variable_comparison(
+    reference_probe,
+    prediction_values,
+    output_dir,
+    plot_seed,
+    variable_name="theta_h",
+    file_prefix=None,
+    plot_prefix=None,
+    dpi=180,
+):
     output_dir = ensure_dir(Path(output_dir))
     if variable_name not in reference_probe:
         raise KeyError(f"Probe dataset does not contain observed variable {variable_name!r}.")
@@ -840,7 +662,9 @@ def save_probe_variable_comparison(reference_probe, prediction_values, output_di
         )
     ax.set_xlabel("physical time (day)")
     ax.set_ylabel(_probe_axis_label(variable_name))
-    ax.set_title(f"{_probe_axis_label(variable_name)} probe comparison relL2={metrics[variable_name]['rel_l2']:.3e}")
+    ax.set_title(
+        f"{_probe_axis_label(variable_name)} probe comparison relL2={metrics[variable_name]['rel_l2']:.3e}"
+    )
     ax.grid(alpha=0.25)
     ax.legend(fontsize=8)
     fig.tight_layout()
@@ -849,7 +673,9 @@ def save_probe_variable_comparison(reference_probe, prediction_values, output_di
     return metrics
 
 
-def save_probe_theta_comparison(reference_probe, prediction_theta_h, output_dir, plot_seed, dpi=180):
+def save_probe_theta_comparison(
+    reference_probe, prediction_theta_h, output_dir, plot_seed, dpi=180
+):
     return save_probe_variable_comparison(
         reference_probe,
         prediction_theta_h,
@@ -862,7 +688,7 @@ def save_probe_theta_comparison(reference_probe, prediction_theta_h, output_dir,
     )
 
 
-def save_parameter_field_comparison(reference_planes, predicted_planes, output_dir, kriging_metrics=None, kriging_metrics_path=None, dpi=180):
+def save_parameter_field_comparison(reference_planes, predicted_planes, output_dir, dpi=180):
     output_dir = ensure_dir(Path(output_dir))
     for child in list(output_dir.iterdir()) if output_dir.exists() else []:
         if child.is_dir():
@@ -871,65 +697,23 @@ def save_parameter_field_comparison(reference_planes, predicted_planes, output_d
     pred = predicted_planes["planes"]["xz"]
     x_1d = ref["coord1_1d"]
     z_1d = ref["coord2_1d"]
-    baseline_planes = load_baseline_field_planes(
-        kriging_metrics=kriging_metrics,
-        kriging_metrics_path=kriging_metrics_path,
-        target_x=x_1d,
-        target_z=z_1d,
-    )
-    baseline_label = _baseline_label(kriging_metrics)
-    has_baseline_fields = baseline_planes is not None
     metrics_rows = []
     metrics_json = {"plot_depth_filter": ref.get("plot_depth_filter", {})}
-    if has_baseline_fields:
-        metrics_json["baseline_field_source"] = {
-            "baseline_label": baseline_label,
-            "root": baseline_planes["root"],
-            "field_paths": baseline_planes["field_paths"],
-        }
-    else:
-        metrics_json["baseline_field_source"] = {
-            "baseline_label": baseline_label,
-            "available": False,
-        }
-    n_cols = 4 if has_baseline_fields else 3
+    n_cols = 3
     fig, axes = plt.subplots(
-        len(PARAMETER_FIELD_VARIABLES),
-        n_cols,
-        figsize=(15.6 if has_baseline_fields else 12.0, 13.0),
-        squeeze=False,
+        len(PARAMETER_FIELD_VARIABLES), n_cols, figsize=(12.0, 13.0), squeeze=False
     )
     for row, field_name in enumerate(PARAMETER_FIELD_VARIABLES):
         truth = ref["fields"][field_name]
         predicted = pred["fields"][field_name]
         err = predicted - truth
         metric = metrics_for_pair(truth, predicted)
-        kriging_rel_l2 = _extract_kriging_rel_l2(kriging_metrics, field_name)
-        if kriging_rel_l2 is not None:
-            metric["kriging_rel_l2"] = float(kriging_rel_l2)
-        kriging_r2 = _extract_kriging_r2(kriging_metrics, field_name)
-        if kriging_r2 is not None:
-            metric["kriging_r2"] = float(kriging_r2)
-        metric["baseline_label"] = baseline_label
-        baseline = None if not has_baseline_fields else baseline_planes["fields"].get(field_name)
-        baseline_metric = None
-        if baseline is not None:
-            baseline_metric = metrics_for_pair(truth, baseline)
-            metric["baseline_field_file"] = baseline_planes["field_paths"].get(field_name)
-            metric["baseline_field_rel_l2"] = float(baseline_metric["rel_l2"])
-            metric["baseline_field_r2"] = float(baseline_metric["r2"])
-            if kriging_rel_l2 is None:
-                metric["kriging_rel_l2"] = float(baseline_metric["rel_l2"])
-            if kriging_r2 is None:
-                metric["kriging_r2"] = float(baseline_metric["r2"])
         metrics_json[field_name] = {**metric, **ref.get("plot_depth_filter", {})}
         metrics_rows.append({"field": field_name, **metric, **ref.get("plot_depth_filter", {})})
         clim_arrays = [truth, predicted]
-        if baseline is not None:
-            clim_arrays.append(baseline)
         clim = (
-            float(min(np.min(values) for values in clim_arrays)),
-            float(max(np.max(values) for values in clim_arrays)),
+            float(min((np.min(values) for values in clim_arrays))),
+            float(max((np.max(values) for values in clim_arrays))),
         )
         err_abs = float(np.max(np.abs(err)))
         axis_label = parameter_axis_label(field_name)
@@ -937,114 +721,72 @@ def save_parameter_field_comparison(reference_planes, predicted_planes, output_d
             ("Reference", truth, "jet", clim[0], clim[1]),
             ("PINN", predicted, "jet", clim[0], clim[1]),
         ]
-        if baseline is not None:
-            panels.append((baseline_label, baseline, "jet", clim[0], clim[1]))
         panels.append(("PINN - Reference", err, "coolwarm", -err_abs, err_abs))
         for col, (title, values, cmap, vmin, vmax) in enumerate(panels):
             label = f"{title} {axis_label}"
             if title == "PINN":
                 label += f"\nrelL2={metric['rel_l2']:.3e} R$^2$={metric['r2']:.3f}"
-            elif baseline is not None and title == baseline_label and baseline_metric is not None:
-                label += f"\nrelL2={baseline_metric['rel_l2']:.3e} R$^2$={baseline_metric['r2']:.3f}"
             elif title == "PINN - Reference":
                 label += f"\nrelL2={metric['rel_l2']:.3e} R$^2$={metric['r2']:.3f}"
-            im = _imshow_xz(axes[row, col], x_1d, z_1d, values, label, cmap=cmap, vmin=vmin, vmax=vmax)
+            im = _imshow_xz(
+                axes[row, col], x_1d, z_1d, values, label, cmap=cmap, vmin=vmin, vmax=vmax
+            )
             cbar = fig.colorbar(im, ax=axes[row, col], shrink=0.78)
             cbar.set_label(axis_label, fontsize=8)
     fig.tight_layout()
     fig.savefig(output_dir / "xz_parameter_fields_overview.png", dpi=int(dpi))
     plt.close(fig)
     write_json(output_dir / "parameter_field_metrics.json", metrics_json)
-    write_dict_csv(output_dir / "parameter_field_metrics.csv", list(metrics_rows[0].keys()), metrics_rows)
+    write_dict_csv(
+        output_dir / "parameter_field_metrics.csv", list(metrics_rows[0].keys()), metrics_rows
+    )
     return metrics_json
 
 
-def save_parameter_point_comparison(targets, predictions, output_dir, kriging_metrics=None, kriging_metrics_path=None, dpi=180):
+def save_parameter_point_comparison(targets, predictions, output_dir, dpi=180):
     output_dir = ensure_dir(Path(output_dir))
     metric_rows = []
     per_point_rows = []
     n_fields = len(PARAMETER_POINT_VARIABLES)
     metadata = targets.get("evaluation_metadata", {})
-    coords_phys = np.asarray(targets["coords_phys"], dtype=np.float32)
-    x_1d = np.unique(coords_phys[:, 0]).astype(np.float32)
-    z_1d = np.unique(coords_phys[:, 1]).astype(np.float32)
-    baseline_planes = load_baseline_field_planes(
-        kriging_metrics=kriging_metrics,
-        kriging_metrics_path=kriging_metrics_path,
-        target_x=x_1d,
-        target_z=z_1d,
-    )
-    baseline_values = _baseline_values_at_points(baseline_planes, x_1d, z_1d, coords_phys)
-    if baseline_values is None:
-        baseline_planes = None
-    has_baseline_fields = baseline_values is not None
-    baseline_label = _baseline_label(kriging_metrics)
-    n_rows = 2 if has_baseline_fields else 1
-    fig, axes = plt.subplots(
-        n_rows,
-        n_fields,
-        figsize=(3.2 * n_fields, 6.4 if has_baseline_fields else 3.2),
-        squeeze=False,
-    )
+    n_rows = 1
+    fig, axes = plt.subplots(n_rows, n_fields, figsize=(3.2 * n_fields, 3.2), squeeze=False)
     for col, field_name in enumerate(PARAMETER_POINT_VARIABLES):
         truth = np.asarray(targets[field_name], dtype=np.float32).reshape(-1)
         pred = np.asarray(predictions[field_name], dtype=np.float32).reshape(-1)
         metric = metrics_for_pair(truth, pred)
-        kriging_rel_l2 = _extract_kriging_rel_l2(kriging_metrics, field_name)
-        if kriging_rel_l2 is not None:
-            metric["kriging_rel_l2"] = float(kriging_rel_l2)
-        kriging_r2 = _extract_kriging_r2(kriging_metrics, field_name)
-        if kriging_r2 is not None:
-            metric["kriging_r2"] = float(kriging_r2)
-        metric["baseline_label"] = baseline_label
-        baseline = None if baseline_values is None else baseline_values.get(field_name)
-        baseline_metric = None
-        if baseline is not None:
-            baseline_metric = metrics_for_pair(truth, baseline)
-            metric["baseline_point_rel_l2"] = float(baseline_metric["rel_l2"])
-            metric["baseline_point_r2"] = float(baseline_metric["r2"])
-            if baseline_planes is not None:
-                metric["baseline_field_file"] = baseline_planes["field_paths"].get(field_name)
-            if kriging_rel_l2 is None:
-                metric["kriging_rel_l2"] = float(baseline_metric["rel_l2"])
-            if kriging_r2 is None:
-                metric["kriging_r2"] = float(baseline_metric["r2"])
         metric_rows.append({"field": field_name, **metric, **metadata})
         ax = axes[0, col]
         ax.scatter(truth, pred, s=3, alpha=0.25)
         value_arrays = [truth, pred]
-        if baseline is not None:
-            value_arrays.append(baseline)
-        lo = float(min(np.min(values) for values in value_arrays))
-        hi = float(max(np.max(values) for values in value_arrays))
+        lo = float(min((np.min(values) for values in value_arrays)))
+        hi = float(max((np.max(values) for values in value_arrays)))
         ax.plot([lo, hi], [lo, hi], "k--", linewidth=0.9)
         axis_label = parameter_axis_label(field_name)
         ax.set_xlabel(f"Reference {axis_label}")
         ax.set_ylabel(f"PINN {axis_label}")
         ax.set_title(f"PINN {axis_label}\nrelL2={metric['rel_l2']:.3e} R$^2$={metric['r2']:.3f}")
         ax.grid(alpha=0.22)
-        if baseline is not None and baseline_metric is not None:
-            ax_ok = axes[1, col]
-            ax_ok.scatter(truth, baseline, s=3, alpha=0.25, color="tab:green")
-            ax_ok.plot([lo, hi], [lo, hi], "k--", linewidth=0.9)
-            ax_ok.set_xlabel(f"Reference {axis_label}")
-            ax_ok.set_ylabel(f"{baseline_label} {axis_label}")
-            ax_ok.set_title(f"{baseline_label} {axis_label}\nrelL2={baseline_metric['rel_l2']:.3e} R$^2$={baseline_metric['r2']:.3f}")
-            ax_ok.grid(alpha=0.22)
         for idx in range(truth.shape[0]):
             row = {
                 "field": field_name,
-                "point_index": int(targets["point_index"][idx]) if "point_index" in targets else idx,
-                "x_m": float(targets["x_m"][idx]) if "x_m" in targets else float(targets["coords_phys"][idx, 0]),
-                "z_m": float(targets["z_m"][idx]) if "z_m" in targets else float(targets["coords_phys"][idx, 1]),
+                "point_index": (
+                    int(targets["point_index"][idx]) if "point_index" in targets else idx
+                ),
+                "x_m": (
+                    float(targets["x_m"][idx])
+                    if "x_m" in targets
+                    else float(targets["coords_phys"][idx, 0])
+                ),
+                "z_m": (
+                    float(targets["z_m"][idx])
+                    if "z_m" in targets
+                    else float(targets["coords_phys"][idx, 1])
+                ),
                 "reference": float(truth[idx]),
                 "prediction": float(pred[idx]),
                 "error": float(pred[idx] - truth[idx]),
             }
-            if baseline is not None:
-                row["baseline_label"] = baseline_label
-                row["baseline_prediction"] = float(baseline[idx])
-                row["baseline_error"] = float(baseline[idx] - truth[idx])
             per_point_rows.append(row)
     fig.tight_layout()
     fig.savefig(output_dir / "parameter_point_scatter.png", dpi=int(dpi))
@@ -1053,9 +795,17 @@ def save_parameter_point_comparison(targets, predictions, output_dir, kriging_me
         output_dir / "parameter_point_metrics.json",
         {
             "evaluation_metadata": metadata,
-            "metrics": {row["field"]: {k: v for k, v in row.items() if k != "field"} for row in metric_rows},
+            "metrics": {
+                row["field"]: {k: v for k, v in row.items() if k != "field"} for row in metric_rows
+            },
         },
     )
-    write_dict_csv(output_dir / "parameter_point_metrics.csv", list(metric_rows[0].keys()), metric_rows)
-    write_dict_csv(output_dir / "parameter_point_predictions.csv", list(per_point_rows[0].keys()), per_point_rows)
+    write_dict_csv(
+        output_dir / "parameter_point_metrics.csv", list(metric_rows[0].keys()), metric_rows
+    )
+    write_dict_csv(
+        output_dir / "parameter_point_predictions.csv",
+        list(per_point_rows[0].keys()),
+        per_point_rows,
+    )
     return {row["field"]: {k: v for k, v in row.items() if k != "field"} for row in metric_rows}
